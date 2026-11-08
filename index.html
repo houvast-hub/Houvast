@@ -80,6 +80,10 @@ details{margin-top:12px}
 summary{cursor:pointer;color:var(--accent);font-weight:700;padding:8px 0}
 .idea{font-size:1.2rem;text-align:center;padding:22px}
 .foot{margin-top:28px;text-align:center}
+.linkbtn{display:block;margin:24px auto 0;border:none;background:none;color:var(--accent);font-weight:700}
+table.days{width:100%;border-collapse:collapse}
+table.days th,table.days td{padding:10px 6px;border-bottom:1px solid var(--border);text-align:left}
+table.days .n{text-align:right}
 </style>
 </head>
 <body>
@@ -96,6 +100,7 @@ summary{cursor:pointer;color:var(--accent);font-weight:700;padding:8px 0}
     <button class="tile" data-go="plan"><b>Mijn plan</b><span>Signalen en wie je belt</span></button>
   </div>
   <div class="card verse" id="home-verse"></div>
+  <button class="linkbtn" data-go="overzicht">Overzicht van deze week</button>
   <p class="muted foot">Alles wat je hier invult, blijft alleen op deze telefoon.</p>
 </section>
 
@@ -122,6 +127,7 @@ summary{cursor:pointer;color:var(--accent);font-weight:700;padding:8px 0}
       <ul class="list" id="piek-list"></ul>
       <div id="talk" hidden></div>
       <button id="piek-stop" style="width:100%">Piekertijd afsluiten</button>
+      <button data-go="overzicht" style="width:100%;margin-top:10px">Overzicht van deze week</button>
     </div>
   </div>
   <div class="card" id="steps-box" hidden>
@@ -186,6 +192,15 @@ summary{cursor:pointer;color:var(--accent);font-weight:700;padding:8px 0}
   <p class="note">Bij direct gevaar: bel 112.</p>
 </section>
 
+<section class="view" id="v-overzicht">
+  <button class="back" data-go="home">← Terug</button>
+  <h1>Deze week</h1>
+  <p class="muted">Hoe vaak de app de laatste 7 dagen is gebruikt. Bekijk dit samen. Veel gebruik is niet erg: het laat zien dat je de app gebruikt als het nodig is.</p>
+  <div class="card"><ul class="list" id="ov-sum"></ul></div>
+  <h2>Per dag</h2>
+  <div style="overflow-x:auto"><table class="days" id="ov-days"></table></div>
+</section>
+
 </main>
 <script>
 const DEF = {
@@ -239,6 +254,7 @@ const DEF = {
   ],
   versesVersion: 2,
   steps: [],
+  log: [],
   good: [],
   plan: {},
   contacts: []
@@ -256,6 +272,12 @@ if (S.versesVersion !== 2){
   save();
 }
 function save(){ try { localStorage.setItem("rustplek", JSON.stringify(S)); } catch (e) {} }
+function logEvent(e){
+  const cutoff = Date.now() - 60 * 864e5;
+  S.log = (S.log || []).filter(x => x.t > cutoff);
+  S.log.push({t: Date.now(), e});
+  save();
+}
 
 const $ = s => document.querySelector(s);
 function el(tag, props = {}, ...kids){
@@ -279,12 +301,13 @@ function delBtn(question, fn){
 }
 
 /* Navigatie */
-const VIEWS = ["home","rust","bakje","afleiding","bemoediging","plan"];
+const VIEWS = ["home","rust","bakje","afleiding","bemoediging","plan","overzicht"];
 function show(){
   let v = location.hash.slice(1);
   if (!VIEWS.includes(v)) v = "home";
   document.querySelectorAll(".view").forEach(s => s.classList.toggle("active", s.id === "v-" + v));
-  if (v === "rust") startRust(); else stopBreath();
+  if (v === "rust"){ logEvent("rust"); startRust(); } else stopBreath();
+  if (v === "bemoediging") logEvent("bemoediging");
   if (RENDER[v]) RENDER[v]();
   window.scrollTo(0, 0);
 }
@@ -395,7 +418,7 @@ function renderBakje(){
 $("#worry-add").onclick = () => {
   const t = $("#worry-in").value.trim();
   if (!t) return;
-  S.worries.push({id: Date.now(), text: t, date: new Date().toISOString()});
+  S.worries.push({id: Date.now(), text: t, date: new Date().toISOString()}); logEvent("zorg");
   save();
   $("#worry-in").value = "";
   const m = $("#worry-msg");
@@ -415,6 +438,7 @@ $("#piek-start").onclick = () => {
   closeTalk();
   $("#piek").hidden = false;
   piekEnd = Date.now() + 30 * 60000;
+  logEvent("piek");
   clearInterval(piekInt); tick(); piekInt = setInterval(tick, 1000);
   renderPiekList();
   $("#piek").scrollIntoView({behavior:"smooth"});
@@ -514,6 +538,7 @@ $("#idea-go").onclick = () => {
   let i;
   do { i = Math.floor(Math.random() * S.ideas.length); } while (S.ideas.length > 1 && i === lastIdea);
   lastIdea = i;
+  logEvent("afleiding");
   c.textContent = S.ideas[i];
 };
 $("#idea-add").onclick = () => {
@@ -577,7 +602,28 @@ $("#c-add").onclick = () => {
   renderPlan();
 };
 
-const RENDER = {home:renderHome, bakje:renderBakje, afleiding:renderAfleiding, bemoediging:renderBemoediging, plan:renderPlan};
+/* Overzicht */
+function renderOverzicht(){
+  const now = new Date();
+  const day = n => new Date(now.getFullYear(), now.getMonth(), now.getDate() + n).getTime();
+  const start = day(-6), prevStart = day(-13), end = day(1);
+  const cnt = (e, a, b) => (S.log || []).filter(x => x.e === e && x.t >= a && x.t < b).length;
+  const ITEMS = [["zorg","Zorgen in het bakje"],["rust","Rustroute gebruikt"],["afleiding","Afleidingsideeën"],["bemoediging","Bemoediging bekeken"],["piek","Piekertijd gehouden"]];
+  const ul = $("#ov-sum");
+  ul.replaceChildren();
+  ITEMS.forEach(([e, l]) => ul.append(el("li", {},
+    el("span", {}, l),
+    el("span", {}, el("b", {}, String(cnt(e, start, end))), el("span", {class:"muted"}, " (vorige week " + cnt(e, prevStart, start) + ")")))));
+  const tb = $("#ov-days");
+  tb.replaceChildren(el("tr", {}, el("th", {}, "Dag"), el("th", {class:"n"}, "Zorgen"), el("th", {class:"n"}, "Rustroute")));
+  for (let i = 6; i >= 0; i--){
+    const a = day(-i), b = day(-i + 1);
+    const label = i === 0 ? "Vandaag" : new Date(a).toLocaleDateString("nl-NL", {weekday:"long", day:"numeric", month:"short"});
+    tb.append(el("tr", {}, el("td", {}, label), el("td", {class:"n"}, String(cnt("zorg", a, b))), el("td", {class:"n"}, String(cnt("rust", a, b)))));
+  }
+}
+
+const RENDER = {home:renderHome, bakje:renderBakje, afleiding:renderAfleiding, bemoediging:renderBemoediging, plan:renderPlan, overzicht:renderOverzicht};
 show();
 </script>
 </body>
