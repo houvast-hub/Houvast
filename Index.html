@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Houvast</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Literata:opsz,wght@7..72,400;7..72,500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#edf1f2;--surface:#ffffff;--text:#24323a;--muted:#5d6b72;
+  --accent:#3e6b7a;--accent-text:#ffffff;--soft:#d9e5e9;--border:#d5dde0;--verse:#ebe8f3;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#161c1f;--surface:#20282c;--text:#e3eaed;--muted:#9fadb3;
+    --accent:#86b3c2;--accent-text:#102127;--soft:#2a3a40;--border:#33424a;--verse:#29263a;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#161c1f;--surface:#20282c;--text:#e3eaed;--muted:#9fadb3;
+  --accent:#86b3c2;--accent-text:#102127;--soft:#2a3a40;--border:#33424a;--verse:#29263a;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px);background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:18px;line-height:1.5}
+main{max-width:560px;margin:0 auto;padding:16px 18px 48px}
+.view{display:none}
+.view.active{display:block}
+h1{font-size:1.65rem;line-height:1.25;margin:8px 0 6px;font-weight:700}
+h2{font-size:1.2rem;margin:28px 0 8px;font-weight:700}
+p{margin:0 0 12px}
+.muted{color:var(--muted);font-size:.95rem}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin:14px 0}
+.verse{background:var(--verse);border:none;border-radius:20px;padding:20px}
+.verse p{font-family:"Literata",Georgia,"Times New Roman",serif;font-size:1.08rem;line-height:1.65;margin:0}
+.verse .ref{font-size:.9rem;color:var(--muted);margin-top:10px}
+button{font:inherit;cursor:pointer;border-radius:12px;border:1px solid var(--border);
+  background:var(--surface);color:var(--text);padding:12px 16px}
+button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.primary{background:var(--accent);color:var(--accent-text);border-color:var(--accent);font-weight:700}
+.big{display:block;width:100%;padding:24px;font-size:1.25rem;margin:18px 0;border-radius:28px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tile{text-align:left;padding:16px;min-height:100px;border-radius:14px}
+.tile b{display:block;margin-bottom:4px}
+.tile span{font-size:.9rem;color:var(--muted)}
+.back{border:none;background:none;padding:8px 0;color:var(--accent);font-weight:700}
+input,textarea{font:inherit;width:100%;padding:12px;border-radius:12px;border:1px solid var(--border);
+  background:var(--surface);color:var(--text)}
+textarea{min-height:90px;resize:vertical}
+.row{display:flex;gap:8px;align-items:center;margin-top:8px}
+.row>input{flex:1;min-width:0}
+.stack>*+*{margin-top:10px}
+.stack button{width:100%}
+ul.list{list-style:none;padding:0;margin:8px 0}
+ul.list li{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)}
+ul.list li:last-child{border-bottom:none}
+ul.list li>div,ul.list li>span:first-child{flex:1;min-width:0;overflow-wrap:anywhere}
+.x{border:none;background:none;color:var(--muted);padding:4px 8px;font-size:1rem}
+.circle{width:190px;height:190px;border-radius:50%;background:var(--soft);margin:28px auto;
+  display:flex;align-items:center;justify-content:center;font-size:2.2rem;font-weight:700;
+  transform:scale(.68);transition:transform 4s ease-in-out}
+.circle.grow{transform:scale(1)}
+@media (prefers-reduced-motion:reduce){.circle{transition:none!important}}
+.center{text-align:center}
+.note{background:var(--soft);border-radius:12px;padding:12px 14px;margin:12px 0}
+.timer{font-size:2.4rem;font-weight:700;text-align:center;margin:4px 0 8px}
+label{display:block;font-weight:700;margin:18px 0 6px}
+a{color:var(--accent)}
+details{margin-top:12px}
+summary{cursor:pointer;color:var(--accent);font-weight:700;padding:8px 0}
+.idea{font-size:1.2rem;text-align:center;padding:22px}
+.foot{margin-top:28px;text-align:center}
+</style>
+</head>
+<body>
+<main>
+
+<section class="view" id="v-home">
+  <h1 id="greet">Hallo</h1>
+  <p class="muted">Je bent hier veilig. Neem rustig je tijd.</p>
+  <button class="primary big" data-go="rust">Ik maak me zorgen</button>
+  <div class="grid">
+    <button class="tile" data-go="bakje"><b>Zorgen parkeren</b><span id="tile-bakje"></span></button>
+    <button class="tile" data-go="afleiding"><b>Afleiding</b><span>Iets leuks om te doen</span></button>
+    <button class="tile" data-go="bemoediging"><b>Bemoediging</b><span>Teksten en mooie dingen</span></button>
+    <button class="tile" data-go="plan"><b>Mijn plan</b><span>Signalen en wie je belt</span></button>
+  </div>
+  <div class="card verse" id="home-verse"></div>
+  <p class="muted foot">Alles wat je hier invult, blijft alleen op deze telefoon.</p>
+</section>
+
+<section class="view" id="v-rust">
+  <button class="back" data-go="home">← Terug</button>
+  <div id="rust-step"></div>
+</section>
+
+<section class="view" id="v-bakje">
+  <button class="back" data-go="home">← Terug</button>
+  <h1>Zorgen parkeren</h1>
+  <p class="muted">Schrijf je zorg in één zin op. Hij ligt veilig in het bakje tot de piekertijd. Dan kijken jullie er samen naar.</p>
+  <textarea id="worry-in" maxlength="200" placeholder="Ik maak me zorgen over…"></textarea>
+  <button class="primary big" id="worry-add">In het bakje leggen</button>
+  <div class="note" id="worry-msg" hidden></div>
+  <div class="card">
+    <p id="bakje-status"></p>
+    <button id="piek-start" style="width:100%">Piekertijd starten</button>
+  </div>
+  <div id="piek" hidden>
+    <div class="card">
+      <div class="timer" id="piek-timer">30:00</div>
+      <p class="muted center">Kies een zorg en bespreek hem met de vier vragen. Wat niet lukt, mag tot morgen in het bakje blijven.</p>
+      <ul class="list" id="piek-list"></ul>
+      <div id="talk" hidden></div>
+      <button id="piek-stop" style="width:100%">Piekertijd afsluiten</button>
+    </div>
+  </div>
+  <div class="card" id="steps-box" hidden>
+    <h2 style="margin-top:0">Afgesproken stapjes</h2>
+    <ul class="list" id="steps-list"></ul>
+  </div>
+  <label for="piek-time">Vaste piekertijd (elke dag, 30 minuten)</label>
+  <input type="time" id="piek-time">
+</section>
+
+<section class="view" id="v-afleiding">
+  <button class="back" data-go="home">← Terug</button>
+  <h1>Afleiding</h1>
+  <button class="primary big" id="idea-go">Geef me een idee</button>
+  <div class="card idea" id="idea-card" hidden></div>
+  <h2>Mijn lijstje</h2>
+  <p class="muted">Zet hier dingen op die jij fijn vindt.</p>
+  <ul class="list" id="idea-list"></ul>
+  <div class="row"><input id="idea-in" placeholder="Nieuw idee"><button id="idea-add">Toevoegen</button></div>
+</section>
+
+<section class="view" id="v-bemoediging">
+  <button class="back" data-go="home">← Terug</button>
+  <h1>Bemoediging</h1>
+  <div class="card verse" id="verse-card"></div>
+  <button id="verse-next" style="width:100%">Andere tekst</button>
+
+  <h2>Dingen die goed gingen</h2>
+  <p class="muted">Schrijf op wat goed afliep, ook als je je er eerst zorgen over maakte. Iemand anders mag hier ook een lief bericht achterlaten.</p>
+  <textarea id="good-in" placeholder="Dit ging goed…"></textarea>
+  <button id="good-add" style="width:100%;margin-top:8px">Bewaren</button>
+  <ul class="list" id="good-list"></ul>
+
+  <details>
+    <summary>Alle teksten bekijken en aanpassen</summary>
+    <p class="muted">De teksten staan hier in eenvoudige woorden. Zoek ze op in je eigen Bijbel als je ze precies wilt lezen. Je kunt teksten weghalen of je eigen favoriete teksten toevoegen.</p>
+    <ul class="list" id="verse-list"></ul>
+    <label for="verse-ref">Nieuwe tekst</label>
+    <input id="verse-ref" placeholder="Bijvoorbeeld Psalm 121:2">
+    <textarea id="verse-text" placeholder="De tekst zelf" style="margin-top:8px"></textarea>
+    <button id="verse-add" style="width:100%;margin-top:8px">Tekst toevoegen</button>
+  </details>
+</section>
+
+<section class="view" id="v-plan">
+  <button class="back" data-go="home">← Terug</button>
+  <h1>Mijn plan</h1>
+  <p class="note">Vul dit samen in, met het signaleringsplan van de behandelaar erbij.</p>
+  <label for="p-goed">Zo gaat het als het goed met me gaat</label>
+  <textarea id="p-goed" data-plan="goed"></textarea>
+  <label for="p-signalen">Vroege signalen dat het minder gaat</label>
+  <textarea id="p-signalen" data-plan="signalen"></textarea>
+  <label for="p-helpt">Wat ik dan doe en wat helpt</label>
+  <textarea id="p-helpt" data-plan="helpt"></textarea>
+  <label for="p-bellen">Wanneer we de behandelaar bellen</label>
+  <textarea id="p-bellen" data-plan="bellen"></textarea>
+
+  <h2>Wie kan ik bellen</h2>
+  <ul class="list" id="contact-list"></ul>
+  <input id="c-name" placeholder="Naam">
+  <div class="row"><input id="c-phone" type="tel" placeholder="Telefoonnummer"><button id="c-add">Toevoegen</button></div>
+  <p class="note">Bij direct gevaar: bel 112.</p>
+</section>
+
+</main>
+<script>
+const DEF = {
+  worries: [],
+  piek: "19:00",
+  ideas: [
+    "Zet je favoriete muziek op",
+    "Maak een korte wandeling, al is het maar een rondje om het blok",
+    "Zet een kop thee en drink hem langzaam op",
+    "Doe een puzzel of een spelletje",
+    "Stuur iemand een berichtje",
+    "Ruim één la of één plank op",
+    "Kijk naar mooie foto’s op je telefoon",
+    "Kleur of teken iets",
+    "Noem bij elke letter van het alfabet een dier",
+    "Was je gezicht of handen met warm water",
+    "Maak iets eenvoudigs klaar om te eten",
+    "Ga even naar buiten en kijk naar de lucht"
+  ],
+  oldVerses: [
+    {ref:"Filippenzen 4:6-7", text:"Zijt in geen ding bezorgd; maar laat uw begeerten in alle ding door bidden en smeken, met dankzegging, bekend worden bij God. En de vrede Gods, die alle verstand te boven gaat, zal uw harten en uw zinnen bewaren in Christus Jezus."},
+    {ref:"Jesaja 41:10", text:"Vrees niet, want Ik ben met u; zijt niet verbaasd, want Ik ben uw God; Ik sterk u, ook help Ik u, ook ondersteun Ik u met de rechterhand Mijner gerechtigheid."},
+    {ref:"Mattheüs 11:28", text:"Komt herwaarts tot Mij, allen die vermoeid en belast zijt, en Ik zal u rust geven."},
+    {ref:"1 Petrus 5:7", text:"Werpt al uw bekommernis op Hem, want Hij zorgt voor u."},
+    {ref:"Psalm 23:1", text:"De HEERE is mijn Herder, mij zal niets ontbreken."},
+    {ref:"Mattheüs 6:34", text:"Zijt dan niet bezorgd tegen den morgen; want de morgen zal voor het zijne bezorgd zijn. Elke dag heeft genoeg aan zijn eigen kwaad."},
+    {ref:"Johannes 14:27", text:"Vrede laat Ik u, Mijn vrede geef Ik u; niet gelijkerwijs de wereld hem geeft, geef Ik hem u. Uw hart worde niet ontroerd, en zij zij niet versaagd."},
+    {ref:"Psalm 46:2", text:"God is ons een Toevlucht en Sterkte; Hij is krachtig bevonden een Hulp in benauwdheden."},
+    {ref:"Jozua 1:9", text:"Zijt sterk en heb goeden moed; verschrikt niet, en ontzet u niet; want de HEERE, uw God, is met u, alwaar gij heengaat."},
+    {ref:"Psalm 4:9", text:"Ik zal in vrede tegelijk nederliggen en slapen; want Gij, HEERE alleen, zult mij doen zeker wonen."},
+    {ref:"Klaagliederen 3:22-23", text:"Het zijn de goedertierenheden des HEEREN, dat wij niet vernield zijn, dat Zijn barmhartigheden geen einde hebben; zij zijn allen morgen nieuw, Uw trouw is groot."},
+    {ref:"Psalm 55:23", text:"Werp uw zorg op den HEERE, en Hij zal u onderhouden."}
+  ],
+  verses: [
+    {plain:true, ref:"Filippenzen 4:6-7", text:"Maak je over niets zorgen. Vertel God in je gebed wat je nodig hebt, en dank Hem. Dan geeft God je vrede, meer dan je kunt begrijpen. Die vrede beschermt je hart en je gedachten."},
+    {plain:true, ref:"Jesaja 41:10", text:"Wees niet bang, want Ik ben bij je. Schrik niet, want Ik ben je God. Ik maak je sterk, Ik help je en Ik houd je vast."},
+    {plain:true, ref:"Matteüs 11:28", text:"Kom bij Mij als je moe bent en het zwaar hebt. Ik geef je rust."},
+    {plain:true, ref:"1 Petrus 5:7", text:"Leg al je zorgen bij God neer. Hij zorgt voor je."},
+    {plain:true, ref:"Psalm 23:1", text:"De Heer is mijn herder. Ik kom niets tekort."},
+    {plain:true, ref:"Matteüs 6:34", text:"Maak je geen zorgen over morgen. Morgen zorgt voor zichzelf. Elke dag heeft genoeg aan zijn eigen zorgen."},
+    {plain:true, ref:"Johannes 14:27", text:"Ik geef je Mijn vrede, niet zoals de wereld die geeft. Wees niet ongerust en wees niet bang."},
+    {plain:true, ref:"Psalm 46:2", text:"God is een veilige plek voor ons en geeft ons kracht. Als het moeilijk is, is Hij dichtbij om te helpen."},
+    {plain:true, ref:"Jozua 1:9", text:"Wees sterk en heb moed. Wees niet bang en raak niet in paniek. De Heer, je God, is bij je, overal waar je gaat."},
+    {plain:true, ref:"Psalm 4:9", text:"Ik ga rustig liggen en val in slaap. Want U, Heer, zorgt dat ik veilig ben."},
+    {plain:true, ref:"Klaagliederen 3:22-23", text:"De liefde van de Heer houdt nooit op. Zijn goedheid is elke morgen weer nieuw. Hij is heel trouw."},
+    {plain:true, ref:"Psalm 55:23", text:"Leg je zorgen bij de Heer neer. Hij zal voor je zorgen."},
+    {plain:true, ref:"Psalm 121:1-2", text:"Ik kijk omhoog naar de bergen. Waar komt mijn hulp vandaan? Mijn hulp komt van de Heer, die hemel en aarde heeft gemaakt."},
+    {plain:true, ref:"Psalm 94:19", text:"Als mijn hoofd vol onrustige gedachten zit, troost U mij en maakt U mij weer blij."},
+    {plain:true, ref:"2 Timoteüs 1:7", text:"God heeft ons geen geest van angst gegeven, maar een geest van kracht, liefde en een helder hoofd."},
+    {plain:true, ref:"Jesaja 26:3", text:"Wie op U vertrouwt en zich aan U vasthoudt, geeft U vrede, volkomen vrede."}
+  ],
+  versesVersion: 2,
+  steps: [],
+  good: [],
+  plan: {},
+  contacts: []
+};
+
+let S = null;
+try { S = JSON.parse(localStorage.getItem("rustplek") || "null"); } catch (e) { S = null; }
+S = Object.assign(JSON.parse(JSON.stringify(DEF)), S || {});
+const OLD_SV = DEF.oldVerses.map(v => v.text);
+delete S.oldVerses;
+if (S.versesVersion !== 2){
+  const own = S.verses.filter(v => !OLD_SV.includes(v.text) && !DEF.verses.some(d => d.text === v.text));
+  S.verses = JSON.parse(JSON.stringify(DEF.verses)).concat(own);
+  S.versesVersion = 2;
+  save();
+}
+function save(){ try { localStorage.setItem("rustplek", JSON.stringify(S)); } catch (e) {} }
+
+const $ = s => document.querySelector(s);
+function el(tag, props = {}, ...kids){
+  const n = document.createElement(tag);
+  for (const k in props){
+    if (k === "class") n.className = props[k];
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), props[k]);
+    else n.setAttribute(k, props[k]);
+  }
+  kids.forEach(c => n.append(c));
+  return n;
+}
+function verseInto(box, v){
+  box.replaceChildren();
+  if (!v){ box.hidden = true; return; }
+  box.hidden = false;
+  box.append(el("p", {}, v.text), el("div", {class:"ref"}, v.ref + (v.plain ? ", in eenvoudige woorden" : "")));
+}
+function delBtn(question, fn){
+  return el("button", {class:"x", "aria-label":"Weghalen", onclick:() => { if (confirm(question)) fn(); }}, "✕");
+}
+
+/* Navigatie */
+const VIEWS = ["home","rust","bakje","afleiding","bemoediging","plan"];
+function show(){
+  let v = location.hash.slice(1);
+  if (!VIEWS.includes(v)) v = "home";
+  document.querySelectorAll(".view").forEach(s => s.classList.toggle("active", s.id === "v-" + v));
+  if (v === "rust") startRust(); else stopBreath();
+  if (RENDER[v]) RENDER[v]();
+  window.scrollTo(0, 0);
+}
+addEventListener("hashchange", show);
+document.addEventListener("click", e => {
+  const g = e.target.closest("[data-go]");
+  if (!g) return;
+  if (location.hash.slice(1) === g.dataset.go) show(); else location.hash = g.dataset.go;
+});
+
+/* Start */
+function renderHome(){
+  const h = new Date().getHours();
+  $("#greet").textContent = h < 12 ? "Goedemorgen" : h < 18 ? "Goedemiddag" : "Goedenavond";
+  const n = S.worries.length;
+  $("#tile-bakje").textContent = n ? (n === 1 ? "1 zorg in het bakje" : n + " zorgen in het bakje") : "Het bakje is leeg";
+  const day = Math.floor(Date.now() / 864e5);
+  verseInto($("#home-verse"), S.verses.length ? S.verses[day % S.verses.length] : null);
+}
+
+/* Rustroute */
+let breathTimer = null;
+function stopBreath(){ clearInterval(breathTimer); breathTimer = null; }
+function startRust(){ stopBreath(); stepBreath(); }
+function stepBreath(){
+  const box = $("#rust-step");
+  const circle = el("div", {class:"circle"});
+  const label = el("p", {class:"center"});
+  box.replaceChildren(
+    el("h1", {}, "Even rustig ademen"),
+    el("p", {class:"muted"}, "Adem in door je neus en langzaam uit door je mond. Volg de cirkel."),
+    circle, label,
+    el("div", {class:"stack"}, el("button", {onclick:() => step54321(0)}, "Overslaan"))
+  );
+  const ROUNDS = 5;
+  let round = 0, phase = "in", t = 4;
+  const set = () => {
+    label.textContent = (phase === "in" ? "Adem in" : "Adem uit") + ", ronde " + (round + 1) + " van " + ROUNDS;
+    circle.textContent = t;
+  };
+  circle.style.transitionDuration = "4s";
+  setTimeout(() => circle.classList.add("grow"), 60);
+  set();
+  breathTimer = setInterval(() => {
+    t--;
+    if (t > 0){ circle.textContent = t; return; }
+    if (phase === "in"){
+      phase = "out"; t = 6;
+      circle.style.transitionDuration = "6s";
+      circle.classList.remove("grow");
+    } else {
+      round++;
+      if (round >= ROUNDS){ stopBreath(); step54321(0); return; }
+      phase = "in"; t = 4;
+      circle.style.transitionDuration = "4s";
+      circle.classList.add("grow");
+    }
+    set();
+  }, 1000);
+}
+const GROUND = [
+  ["5", "dingen die je ziet"],
+  ["4", "dingen die je kunt voelen, zoals je voeten op de grond"],
+  ["3", "dingen die je hoort"],
+  ["2", "dingen die je ruikt"],
+  ["1", "ding dat je proeft, of iets wat je lekker vindt"]
+];
+function step54321(i){
+  stopBreath();
+  if (i >= GROUND.length) return stepEnd();
+  $("#rust-step").replaceChildren(
+    el("h1", {}, "Kijk om je heen"),
+    el("p", {class:"muted"}, "Noem het hardop of in je hoofd. Neem de tijd."),
+    el("div", {class:"circle grow"}, GROUND[i][0]),
+    el("p", {class:"center"}, "Noem " + GROUND[i][0] + " " + GROUND[i][1] + "."),
+    el("div", {class:"stack"}, el("button", {class:"primary", onclick:() => step54321(i + 1)}, "Gedaan"))
+  );
+  window.scrollTo(0, 0);
+}
+function stepEnd(){
+  const vc = el("div", {class:"card verse"});
+  verseInto(vc, S.verses.length ? S.verses[Math.floor(Math.random() * S.verses.length)] : null);
+  $("#rust-step").replaceChildren(
+    el("h1", {}, "Goed gedaan"),
+    el("p", {}, "Je hebt even pauze genomen. Wat wil je nu doen?"),
+    el("div", {class:"stack"},
+      el("button", {class:"primary", "data-go":"bakje"}, "Mijn zorg in het bakje leggen"),
+      el("button", {"data-go":"afleiding"}, "Iets leuks gaan doen"),
+      el("button", {"data-go":"bemoediging"}, "Een bemoedigende tekst lezen"),
+      el("button", {onclick:() => startRust()}, "Nog een keer ademen"),
+      el("button", {"data-go":"home"}, "Terug naar het begin")
+    ),
+    vc
+  );
+  window.scrollTo(0, 0);
+}
+
+/* Zorgenbakje */
+function renderBakje(){
+  const n = S.worries.length;
+  $("#bakje-status").textContent =
+    (n === 0 ? "Het bakje is leeg." : n === 1 ? "Er ligt 1 zorg in het bakje." : "Er liggen " + n + " zorgen in het bakje.") +
+    " Piekertijd: elke dag om " + S.piek + ", 30 minuten.";
+  $("#piek-time").value = S.piek;
+  renderSteps();
+  renderPiekList();
+}
+$("#worry-add").onclick = () => {
+  const t = $("#worry-in").value.trim();
+  if (!t) return;
+  S.worries.push({id: Date.now(), text: t, date: new Date().toISOString()});
+  save();
+  $("#worry-in").value = "";
+  const m = $("#worry-msg");
+  m.textContent = "Opgeborgen. Je hoeft er nu niet meer mee bezig te zijn. Om " + S.piek + " kijken jullie er samen naar.";
+  m.hidden = false;
+  renderBakje();
+};
+$("#piek-time").onchange = e => { if (e.target.value){ S.piek = e.target.value; save(); renderBakje(); } };
+let piekEnd = null, piekInt = null;
+function tick(){
+  const ms = Math.max(0, piekEnd - Date.now());
+  const m = Math.floor(ms / 60000), s = Math.floor(ms % 60000 / 1000);
+  $("#piek-timer").textContent = ms > 0 ? m + ":" + String(s).padStart(2, "0") : "De tijd is om";
+  if (ms <= 0) clearInterval(piekInt);
+}
+$("#piek-start").onclick = () => {
+  closeTalk();
+  $("#piek").hidden = false;
+  piekEnd = Date.now() + 30 * 60000;
+  clearInterval(piekInt); tick(); piekInt = setInterval(tick, 1000);
+  renderPiekList();
+  $("#piek").scrollIntoView({behavior:"smooth"});
+};
+$("#piek-stop").onclick = () => { closeTalk(); clearInterval(piekInt); $("#piek").hidden = true; $("#worry-msg").hidden = true; };
+function renderPiekList(){
+  const ul = $("#piek-list");
+  ul.replaceChildren();
+  if (!S.worries.length){ ul.append(el("li", {}, "Het bakje is leeg.")); return; }
+  S.worries.forEach(w => {
+    const d = new Date(w.date).toLocaleDateString("nl-NL", {weekday:"long", day:"numeric", month:"long"});
+    ul.append(el("li", {},
+      el("div", {}, w.text, el("div", {class:"muted"}, d)),
+      el("button", {class:"primary", onclick:() => openTalk(w)}, "Bespreken")
+    ));
+  });
+}
+
+/* Bespreken met vier vragen */
+function closeTalk(){ const t = $("#talk"); t.hidden = true; t.replaceChildren(); $("#piek-list").hidden = false; }
+function openTalk(w){
+  $("#piek-list").hidden = true;
+  const box = $("#talk");
+  box.hidden = false;
+  const zorg = el("div", {class:"note"}, w.text);
+  const go = (title, ...rest) => { box.replaceChildren(zorg, el("h2", {}, title), ...rest); box.scrollIntoView({behavior:"smooth", block:"start"}); };
+  const step1 = () => go("1. Wat is de zorg precies?",
+    el("p", {}, "Maak het zo concreet mogelijk. Waar ben je precies bang voor? Probeer het in één zin te zeggen."),
+    el("div", {class:"stack"},
+      el("button", {class:"primary", onclick:() => step2()}, "Volgende"),
+      el("button", {onclick:closeTalk}, "Terug naar het bakje")));
+  const step2 = () => {
+    const goods = S.good.slice(-3).reverse();
+    const ul = el("ul", {class:"list"});
+    goods.forEach(g => ul.append(el("li", {}, el("span", {}, g.text))));
+    go("2. Hoe vaak ging dit al goed?",
+      el("p", {}, "Denk aan keren dat je je eerder zorgen maakte en het toch goed afliep."),
+      goods.length
+        ? el("div", {}, el("p", {class:"muted"}, "Uit je lijst met dingen die goed gingen:"), ul)
+        : el("p", {class:"muted"}, "Je lijst met dingen die goed gingen is nog leeg. Als iets goed afloopt, kun je het daar bewaren."),
+      el("div", {class:"stack"},
+        el("button", {class:"primary", onclick:() => step3()}, "Volgende"),
+        el("button", {onclick:() => step1()}, "Vorige")));
+  };
+  const step3 = () => go("3. Kunnen we er iets aan doen?",
+    el("div", {class:"stack"},
+      el("button", {class:"primary", onclick:() => step3yes()}, "Ja, er is iets wat we kunnen doen"),
+      el("button", {class:"primary", onclick:() => step3no()}, "Nee, dit kunnen we niet oplossen"),
+      el("button", {onclick:() => step2()}, "Vorige")));
+  const step3yes = () => {
+    const inp = el("input", {placeholder:"Wat doen we, wie doet het en wanneer?"});
+    go("Eén kleine stap",
+      el("p", {}, "Spreek samen één kleine stap af. Niet alles tegelijk, alleen de eerste stap."),
+      inp,
+      el("div", {class:"stack", style:"margin-top:10px"},
+        el("button", {class:"primary", onclick:() => { const t = inp.value.trim(); if (t){ S.steps.push({id:Date.now(), text:t}); save(); renderSteps(); } step4(); }}, "Afspreken"),
+        el("button", {onclick:() => step3()}, "Vorige")));
+  };
+  const step3no = () => {
+    const v = S.verses.find(x => x.ref === "1 Petrus 5:7") || S.verses[0];
+    const vc = el("div", {class:"card verse"});
+    verseInto(vc, v);
+    go("Dit leggen we neer",
+      el("p", {}, "Dit kunnen we nu niet oplossen. Dat is moeilijk, en dat gevoel mag er zijn. Je hoeft het niet zeker te weten om het neer te leggen."),
+      vc,
+      el("div", {class:"stack"},
+        el("button", {class:"primary", onclick:() => step4()}, "Volgende"),
+        el("button", {onclick:() => step3()}, "Vorige")));
+  };
+  const step4 = () => go("4. Afsluiten",
+    el("p", {}, "Hoe gaan we verder met deze zorg?"),
+    el("div", {class:"stack"},
+      el("button", {class:"primary", onclick:() => { S.worries = S.worries.filter(x => x.id !== w.id); save(); closeTalk(); renderBakje(); }}, "Besproken, ik leg hem neer"),
+      el("button", {onclick:() => { closeTalk(); renderBakje(); }}, "Mag morgen terugkomen")));
+  step1();
+}
+function renderSteps(){
+  const ul = $("#steps-list");
+  ul.replaceChildren();
+  $("#steps-box").hidden = !S.steps.length;
+  S.steps.forEach((s, i) => ul.append(el("li", {}, el("span", {}, s.text),
+    el("button", {onclick:() => { S.steps.splice(i, 1); save(); renderSteps(); }}, "Gedaan"))));
+}
+
+/* Afleiding */
+let lastIdea = -1;
+function renderAfleiding(){
+  const ul = $("#idea-list");
+  ul.replaceChildren();
+  S.ideas.forEach((t, i) => ul.append(el("li", {}, el("span", {}, t),
+    delBtn("Dit idee weghalen?", () => { S.ideas.splice(i, 1); save(); renderAfleiding(); }))));
+}
+$("#idea-go").onclick = () => {
+  const c = $("#idea-card");
+  c.hidden = false;
+  if (!S.ideas.length){ c.textContent = "Zet eerst een paar ideeën op je lijstje hieronder."; return; }
+  let i;
+  do { i = Math.floor(Math.random() * S.ideas.length); } while (S.ideas.length > 1 && i === lastIdea);
+  lastIdea = i;
+  c.textContent = S.ideas[i];
+};
+$("#idea-add").onclick = () => {
+  const t = $("#idea-in").value.trim();
+  if (!t) return;
+  S.ideas.push(t); save(); $("#idea-in").value = ""; renderAfleiding();
+};
+
+/* Bemoediging */
+let vIdx = -1;
+function nextVerse(){
+  if (!S.verses.length){ verseInto($("#verse-card"), null); return; }
+  let i;
+  do { i = Math.floor(Math.random() * S.verses.length); } while (S.verses.length > 1 && i === vIdx);
+  vIdx = i;
+  verseInto($("#verse-card"), S.verses[i]);
+}
+function renderBemoediging(){
+  nextVerse();
+  const gl = $("#good-list");
+  gl.replaceChildren();
+  [...S.good].reverse().forEach(g => gl.append(el("li", {}, el("span", {}, g.text),
+    delBtn("Weghalen?", () => { S.good = S.good.filter(x => x.id !== g.id); save(); renderBemoediging(); }))));
+  const vl = $("#verse-list");
+  vl.replaceChildren();
+  S.verses.forEach((v, i) => vl.append(el("li", {},
+    el("div", {}, el("b", {}, v.ref), el("div", {}, v.text)),
+    delBtn("Deze tekst weghalen?", () => { S.verses.splice(i, 1); save(); renderBemoediging(); }))));
+}
+$("#verse-next").onclick = nextVerse;
+$("#good-add").onclick = () => {
+  const t = $("#good-in").value.trim();
+  if (!t) return;
+  S.good.push({id: Date.now(), text: t}); save(); $("#good-in").value = ""; renderBemoediging();
+};
+$("#verse-add").onclick = () => {
+  const r = $("#verse-ref").value.trim(), t = $("#verse-text").value.trim();
+  if (!t) return;
+  S.verses.push({ref: r || "Eigen tekst", text: t}); save();
+  $("#verse-ref").value = ""; $("#verse-text").value = "";
+  renderBemoediging();
+};
+
+/* Plan */
+document.querySelectorAll("[data-plan]").forEach(t =>
+  t.addEventListener("input", () => { S.plan[t.dataset.plan] = t.value; save(); }));
+function renderPlan(){
+  document.querySelectorAll("[data-plan]").forEach(t => t.value = S.plan[t.dataset.plan] || "");
+  const ul = $("#contact-list");
+  ul.replaceChildren();
+  if (!S.contacts.length) ul.append(el("li", {class:"muted"}, "Nog geen contacten. Voeg hieronder iemand toe."));
+  S.contacts.forEach((c, i) => ul.append(el("li", {},
+    el("div", {}, el("a", {href:"tel:" + c.phone.replace(/[^\d+]/g, "")}, "Bel " + c.name), el("div", {class:"muted"}, c.phone)),
+    delBtn("Dit contact weghalen?", () => { S.contacts.splice(i, 1); save(); renderPlan(); }))));
+}
+$("#c-add").onclick = () => {
+  const n = $("#c-name").value.trim(), p = $("#c-phone").value.trim();
+  if (!n || !p) return;
+  S.contacts.push({name: n, phone: p}); save();
+  $("#c-name").value = ""; $("#c-phone").value = "";
+  renderPlan();
+};
+
+const RENDER = {home:renderHome, bakje:renderBakje, afleiding:renderAfleiding, bemoediging:renderBemoediging, plan:renderPlan};
+show();
+</script>
+</body>
+</html>
