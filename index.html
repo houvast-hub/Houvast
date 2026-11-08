@@ -54,7 +54,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible,
 .tile b{display:block;margin-bottom:4px}
 .tile span{font-size:.9rem;color:var(--muted)}
 .back{border:none;background:none;padding:8px 0;color:var(--accent);font-weight:700}
-input,textarea{font:inherit;width:100%;padding:12px;border-radius:12px;border:1px solid var(--border);
+input,textarea,select{font:inherit;width:100%;padding:12px;border-radius:12px;border:1px solid var(--border);
   background:var(--surface);color:var(--text)}
 textarea{min-height:90px;resize:vertical}
 .row{display:flex;gap:8px;align-items:center;margin-top:8px}
@@ -93,11 +93,14 @@ table.days .n{text-align:right}
   <h1 id="greet">Hallo</h1>
   <p class="muted">Je bent hier veilig. Neem rustig je tijd.</p>
   <button class="primary big" data-go="rust">Ik maak me zorgen</button>
+  <button class="big" data-go="vragen" style="margin-top:-6px">Ik wil iets opzoeken</button>
   <div class="grid">
     <button class="tile" data-go="bakje"><b>Zorgen parkeren</b><span id="tile-bakje"></span></button>
     <button class="tile" data-go="afleiding"><b>Afleiding</b><span>Iets leuks om te doen</span></button>
     <button class="tile" data-go="bemoediging"><b>Bemoediging</b><span>Teksten en mooie dingen</span></button>
     <button class="tile" data-go="plan"><b>Mijn plan</b><span>Signalen en wie je belt</span></button>
+    <button class="tile" data-go="ontspan"><b>Spierontspanning</b><span>In 3 minuten tot rust</span></button>
+    <button class="tile" data-go="avond"><b>Dag afsluiten</b><span>Even terugkijken</span></button>
   </div>
   <div class="card verse" id="home-verse"></div>
   <button class="linkbtn" data-go="overzicht">Overzicht van deze week</button>
@@ -192,6 +195,50 @@ table.days .n{text-align:right}
   <p class="note">Bij direct gevaar: bel 112.</p>
 </section>
 
+<section class="view" id="v-vragen">
+  <button class="back" data-go="home">← Terug</button>
+  <h1>Ik wil iets opzoeken</h1>
+  <p class="muted">Schrijf je vraag op en neem hem mee naar je volgende afspraak. Je arts, psycholoog of behandelaar kent jou en je situatie. Internet niet.</p>
+  <textarea id="q-in" maxlength="300" placeholder="Mijn vraag is…"></textarea>
+  <label for="q-who">Voor wie is de vraag?</label>
+  <select id="q-who"><option>Arts</option><option>Psycholoog</option><option>Behandelaar</option><option>Apotheek</option></select>
+  <button class="primary big" id="q-add">Vraag bewaren</button>
+  <div class="note" id="q-msg" hidden>
+    <p>Bewaard. Laat de vraag nu even rusten. De drang om te zoeken zakt meestal vanzelf als je hem even laat staan. Wat wil je nu doen?</p>
+    <div class="stack">
+      <button class="primary" data-go="afleiding">Iets leuks gaan doen</button>
+      <button data-go="rust">Even rustig ademen</button>
+      <button data-go="ontspan">Spierontspanning</button>
+    </div>
+  </div>
+  <p class="note">Heb je nu last van iets nieuws, of van iets wat je niet vertrouwt? Bel dan vandaag nog je apotheek of behandelaar. Wacht daar niet mee tot de volgende afspraak.</p>
+  <h2>Mijn vragen</h2>
+  <ul class="list" id="q-list"></ul>
+</section>
+
+<section class="view" id="v-ontspan">
+  <button class="back" data-go="home">← Terug</button>
+  <h1>Spierontspanning</h1>
+  <div id="o-box"></div>
+</section>
+
+<section class="view" id="v-avond">
+  <button class="back" data-go="home">← Terug</button>
+  <h1>Dag afsluiten</h1>
+  <p class="muted">Twee korte vragen. Je mag ook iets overslaan.</p>
+  <label for="a-goed">Wat ging er vandaag goed?</label>
+  <textarea id="a-goed" placeholder="Ook kleine dingen tellen"></textarea>
+  <label for="a-dank">Waar ben je dankbaar voor?</label>
+  <textarea id="a-dank"></textarea>
+  <p class="note" id="a-bakje"></p>
+  <button class="primary big" id="a-done">Dag afsluiten</button>
+  <div id="a-end" hidden>
+    <p>Goed gedaan. Je dag is afgesloten. Wat je opschreef, staat nu bij Bemoediging.</p>
+    <div class="card verse" id="a-verse"></div>
+    <button data-go="home" style="width:100%">Terug naar het begin</button>
+  </div>
+</section>
+
 <section class="view" id="v-overzicht">
   <button class="back" data-go="home">← Terug</button>
   <h1>Deze week</h1>
@@ -255,6 +302,7 @@ const DEF = {
   versesVersion: 2,
   steps: [],
   log: [],
+  questions: [],
   good: [],
   plan: {},
   contacts: []
@@ -301,13 +349,14 @@ function delBtn(question, fn){
 }
 
 /* Navigatie */
-const VIEWS = ["home","rust","bakje","afleiding","bemoediging","plan","overzicht"];
+const VIEWS = ["home","rust","bakje","afleiding","bemoediging","plan","overzicht","vragen","ontspan","avond"];
 function show(){
   let v = location.hash.slice(1);
   if (!VIEWS.includes(v)) v = "home";
   document.querySelectorAll(".view").forEach(s => s.classList.toggle("active", s.id === "v-" + v));
   if (v === "rust"){ logEvent("rust"); startRust(); } else stopBreath();
   if (v === "bemoediging") logEvent("bemoediging");
+  if (v !== "ontspan") stopOntspan();
   if (RENDER[v]) RENDER[v]();
   window.scrollTo(0, 0);
 }
@@ -602,13 +651,115 @@ $("#c-add").onclick = () => {
   renderPlan();
 };
 
+/* Vragen voor de dokter */
+function renderVragen(){
+  $("#q-msg").hidden = true;
+  const ul = $("#q-list");
+  ul.replaceChildren();
+  if (!S.questions.length){ ul.append(el("li", {class:"muted"}, "Nog geen vragen.")); return; }
+  const sorted = [...S.questions].sort((a, b) => (Number(!!a.answer) - Number(!!b.answer)) || (b.id - a.id));
+  sorted.forEach(q => {
+    const ans = el("textarea", {placeholder:"Wat zei de " + q.who.toLowerCase() + "?", style:"min-height:60px;margin-top:8px"});
+    ans.value = q.answer || "";
+    ans.addEventListener("input", () => { q.answer = ans.value; save(); });
+    const d = new Date(q.id).toLocaleDateString("nl-NL", {day:"numeric", month:"long"});
+    ul.append(el("li", {},
+      el("div", {}, el("b", {}, q.text), el("div", {class:"muted"}, "Voor: " + q.who + ", " + d), ans),
+      delBtn("Deze vraag weghalen?", () => { S.questions = S.questions.filter(x => x.id !== q.id); save(); renderVragen(); })));
+  });
+}
+$("#q-add").onclick = () => {
+  const t = $("#q-in").value.trim();
+  if (!t) return;
+  S.questions.push({id: Date.now(), text: t, who: $("#q-who").value, answer: ""});
+  logEvent("vraag");
+  $("#q-in").value = "";
+  renderVragen();
+  $("#q-msg").hidden = false;
+};
+
+/* Spierontspanning */
+const MUSCLES = [
+  ["je voeten", "Krul je tenen stevig naar beneden."],
+  ["je onderbenen", "Trek je tenen naar je toe."],
+  ["je bovenbenen", "Druk je knieën stevig tegen elkaar."],
+  ["je buik", "Span je buikspieren aan."],
+  ["je handen", "Maak twee stevige vuisten."],
+  ["je armen", "Buig je armen en span je bovenarmen aan."],
+  ["je schouders", "Trek je schouders op naar je oren."],
+  ["je gezicht", "Knijp je ogen dicht en druk je lippen op elkaar."]
+];
+let oTimer = null;
+function stopOntspan(){ clearInterval(oTimer); oTimer = null; }
+function renderOntspan(){
+  stopOntspan();
+  $("#o-box").replaceChildren(
+    el("p", {}, "Je spant steeds een deel van je lichaam 5 tellen aan en ontspant het daarna 10 tellen. Zo merk je het verschil tussen spanning en ontspanning. Het duurt ongeveer 2 minuten."),
+    el("p", {class:"muted"}, "Ga lekker zitten. Span niet te hard: het mag stevig voelen, maar niet pijnlijk. Doet iets pijn, sla die stap dan over."),
+    el("button", {class:"primary big", onclick:() => { logEvent("ontspan"); runMuscle(0); }}, "Beginnen"));
+}
+function runMuscle(i){
+  stopOntspan();
+  const box = $("#o-box");
+  if (i >= MUSCLES.length){
+    box.replaceChildren(
+      el("h2", {}, "Klaar"),
+      el("p", {}, "Blijf nog even zitten en voel hoe je lichaam nu aanvoelt. Adem rustig door."),
+      el("div", {class:"stack"},
+        el("button", {class:"primary", onclick:() => runMuscle(0)}, "Nog een keer"),
+        el("button", {"data-go":"home"}, "Terug naar het begin")));
+    return;
+  }
+  const [part, how] = MUSCLES[i];
+  const title = el("h2", {}), text = el("p", {}), count = el("div", {class:"circle grow"});
+  box.replaceChildren(
+    el("p", {class:"muted"}, "Stap " + (i + 1) + " van " + MUSCLES.length),
+    title, text, count,
+    el("div", {class:"stack"},
+      el("button", {onclick:() => runMuscle(i + 1)}, "Deze stap overslaan"),
+      el("button", {onclick:() => renderOntspan()}, "Stoppen")));
+  let phase = "aan", t = 5;
+  const set = () => {
+    title.textContent = phase === "aan" ? "Span " + part + " aan" : "Ontspan " + part;
+    text.textContent = phase === "aan" ? how : "Laat de spanning wegzakken. Voel het verschil.";
+    count.textContent = t;
+  };
+  set();
+  oTimer = setInterval(() => {
+    t--;
+    if (t > 0){ count.textContent = t; return; }
+    if (phase === "aan"){ phase = "los"; t = 10; set(); } else runMuscle(i + 1);
+  }, 1000);
+}
+
+/* Dag afsluiten */
+function renderAvond(){
+  const n = S.worries.length;
+  $("#a-bakje").textContent = n
+    ? (n === 1 ? "Er ligt 1 zorg in het bakje." : "Er liggen " + n + " zorgen in het bakje.") + " Die mogen tot morgen wachten. Je hoeft er vannacht niets mee."
+    : "Het bakje is leeg. Fijn.";
+  $("#a-end").hidden = true;
+  $("#a-done").hidden = false;
+}
+$("#a-done").onclick = () => {
+  const g = $("#a-goed").value.trim(), d = $("#a-dank").value.trim();
+  if (g) S.good.push({id: Date.now(), text: g});
+  if (d) S.good.push({id: Date.now() + 1, text: "Dankbaar voor: " + d});
+  logEvent("avond");
+  $("#a-goed").value = "";
+  $("#a-dank").value = "";
+  $("#a-done").hidden = true;
+  verseInto($("#a-verse"), S.verses.find(x => x.ref === "Psalm 4:9") || null);
+  $("#a-end").hidden = false;
+};
+
 /* Overzicht */
 function renderOverzicht(){
   const now = new Date();
   const day = n => new Date(now.getFullYear(), now.getMonth(), now.getDate() + n).getTime();
   const start = day(-6), prevStart = day(-13), end = day(1);
   const cnt = (e, a, b) => (S.log || []).filter(x => x.e === e && x.t >= a && x.t < b).length;
-  const ITEMS = [["zorg","Zorgen in het bakje"],["rust","Rustroute gebruikt"],["afleiding","Afleidingsideeën"],["bemoediging","Bemoediging bekeken"],["piek","Piekertijd gehouden"]];
+  const ITEMS = [["zorg","Zorgen in het bakje"],["rust","Rustroute gebruikt"],["afleiding","Afleidingsideeën"],["bemoediging","Bemoediging bekeken"],["piek","Piekertijd gehouden"],["vraag","Vragen geparkeerd"],["ontspan","Spierontspanning"],["avond","Dag afgesloten"]];
   const ul = $("#ov-sum");
   ul.replaceChildren();
   ITEMS.forEach(([e, l]) => ul.append(el("li", {},
@@ -623,7 +774,7 @@ function renderOverzicht(){
   }
 }
 
-const RENDER = {home:renderHome, bakje:renderBakje, afleiding:renderAfleiding, bemoediging:renderBemoediging, plan:renderPlan, overzicht:renderOverzicht};
+const RENDER = {home:renderHome, bakje:renderBakje, afleiding:renderAfleiding, bemoediging:renderBemoediging, plan:renderPlan, overzicht:renderOverzicht, vragen:renderVragen, ontspan:renderOntspan, avond:renderAvond};
 show();
 </script>
 </body>
