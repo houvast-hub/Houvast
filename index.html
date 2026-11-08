@@ -94,15 +94,15 @@ table.days .n{text-align:right}
   <p class="muted">Je bent hier veilig. Neem rustig je tijd.</p>
   <button class="primary big" data-go="rust">Ik maak me zorgen</button>
   <button class="big" data-go="vragen" style="margin-top:-6px">Ik wil iets opzoeken</button>
+  <div class="card verse" id="home-verse"></div>
   <div class="grid">
     <button class="tile" data-go="bakje"><b>Zorgen parkeren</b><span id="tile-bakje"></span></button>
     <button class="tile" data-go="afleiding"><b>Afleiding</b><span>Iets leuks om te doen</span></button>
     <button class="tile" data-go="bemoediging"><b>Bemoediging</b><span>Teksten en mooie dingen</span></button>
     <button class="tile" data-go="plan"><b>Mijn plan</b><span>Signalen en wie je belt</span></button>
-    <button class="tile" data-go="ontspan"><b>Spierontspanning</b><span>In 3 minuten tot rust</span></button>
+    <button class="tile" data-go="ontspan"><b>Spierontspanning</b><span>In 1 minuut tot rust</span></button>
     <button class="tile" data-go="avond"><b>Dag afsluiten</b><span>Even terugkijken</span></button>
   </div>
-  <div class="card verse" id="home-verse"></div>
   <button class="linkbtn" data-go="overzicht">Overzicht van deze week</button>
   <p class="muted foot">Alles wat je hier invult, blijft alleen op deze telefoon.</p>
 </section>
@@ -115,7 +115,7 @@ table.days .n{text-align:right}
 <section class="view" id="v-bakje">
   <button class="back" data-go="home">← Terug</button>
   <h1>Zorgen parkeren</h1>
-  <p class="muted">Schrijf je zorg in één zin op. Hij ligt veilig in het bakje tot de piekertijd. Dan kijken jullie er samen naar.</p>
+  <p class="muted">Eén zin is genoeg. Bij de piekertijd kijken jullie er samen naar.</p>
   <textarea id="worry-in" maxlength="200" placeholder="Ik maak me zorgen over…"></textarea>
   <button class="primary big" id="worry-add">In het bakje leggen</button>
   <div class="note" id="worry-msg" hidden></div>
@@ -198,13 +198,13 @@ table.days .n{text-align:right}
 <section class="view" id="v-vragen">
   <button class="back" data-go="home">← Terug</button>
   <h1>Ik wil iets opzoeken</h1>
-  <p class="muted">Schrijf je vraag op en neem hem mee naar je volgende afspraak. Je arts, psycholoog of behandelaar kent jou en je situatie. Internet niet.</p>
+  <p class="muted">Schrijf je vraag op en neem hem mee naar je afspraak. Je arts kent jou, internet niet.</p>
   <textarea id="q-in" maxlength="300" placeholder="Mijn vraag is…"></textarea>
   <label for="q-who">Voor wie is de vraag?</label>
   <select id="q-who"><option>Arts</option><option>Psycholoog</option><option>Behandelaar</option><option>Apotheek</option></select>
   <button class="primary big" id="q-add">Vraag bewaren</button>
   <div class="note" id="q-msg" hidden>
-    <p>Bewaard. Laat de vraag nu even rusten. De drang om te zoeken zakt meestal vanzelf als je hem even laat staan. Wat wil je nu doen?</p>
+    <p>Bewaard. Laat hem nu even rusten. Wat wil je doen?</p>
     <div class="stack">
       <button class="primary" data-go="afleiding">Iets leuks gaan doen</button>
       <button data-go="rust">Even rustig ademen</button>
@@ -387,11 +387,11 @@ function stepBreath(){
   const label = el("p", {class:"center"});
   box.replaceChildren(
     el("h1", {}, "Even rustig ademen"),
-    el("p", {class:"muted"}, "Adem in door je neus en langzaam uit door je mond. Volg de cirkel."),
+    el("p", {class:"muted"}, "In door je neus, uit door je mond. Volg de cirkel."),
     circle, label,
     el("div", {class:"stack"}, el("button", {onclick:() => step54321(0)}, "Overslaan"))
   );
-  const ROUNDS = 5;
+  const ROUNDS = 3;
   let round = 0, phase = "in", t = 4;
   const set = () => {
     label.textContent = (phase === "in" ? "Adem in" : "Adem uit") + ", ronde " + (round + 1) + " van " + ROUNDS;
@@ -429,7 +429,7 @@ function step54321(i){
   if (i >= GROUND.length) return stepEnd();
   $("#rust-step").replaceChildren(
     el("h1", {}, "Kijk om je heen"),
-    el("p", {class:"muted"}, "Noem het hardop of in je hoofd. Neem de tijd."),
+    el("p", {class:"muted"}, "Hardop of in je hoofd."),
     el("div", {class:"circle grow"}, GROUND[i][0]),
     el("p", {class:"center"}, "Noem " + GROUND[i][0] + " " + GROUND[i][1] + "."),
     el("div", {class:"stack"}, el("button", {class:"primary", onclick:() => step54321(i + 1)}, "Gedaan"))
@@ -681,11 +681,8 @@ $("#q-add").onclick = () => {
 /* Spierontspanning */
 const MUSCLES = [
   ["je voeten", "Krul je tenen stevig naar beneden."],
-  ["je onderbenen", "Trek je tenen naar je toe."],
-  ["je bovenbenen", "Druk je knieën stevig tegen elkaar."],
   ["je buik", "Span je buikspieren aan."],
   ["je handen", "Maak twee stevige vuisten."],
-  ["je armen", "Buig je armen en span je bovenarmen aan."],
   ["je schouders", "Trek je schouders op naar je oren."],
   ["je gezicht", "Knijp je ogen dicht en druk je lippen op elkaar."]
 ];
@@ -694,8 +691,8 @@ function stopOntspan(){ clearInterval(oTimer); oTimer = null; }
 function renderOntspan(){
   stopOntspan();
   $("#o-box").replaceChildren(
-    el("p", {}, "Je spant steeds een deel van je lichaam 5 tellen aan en ontspant het daarna 10 tellen. Zo merk je het verschil tussen spanning en ontspanning. Het duurt ongeveer 2 minuten."),
-    el("p", {class:"muted"}, "Ga lekker zitten. Span niet te hard: het mag stevig voelen, maar niet pijnlijk. Doet iets pijn, sla die stap dan over."),
+    el("p", {}, "5 tellen aanspannen, 10 tellen ontspannen. Ruim 1 minuut."),
+    el("p", {class:"muted"}, "Ga lekker zitten. Span niet zo hard dat het pijn doet."),
     el("button", {class:"primary big", onclick:() => { logEvent("ontspan"); runMuscle(0); }}, "Beginnen"));
 }
 function runMuscle(i){
