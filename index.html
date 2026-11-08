@@ -84,6 +84,13 @@ summary{cursor:pointer;color:var(--accent);font-weight:700;padding:8px 0}
 table.days{width:100%;border-collapse:collapse}
 table.days th,table.days td{padding:10px 6px;border-bottom:1px solid var(--border);text-align:left}
 table.days .n{text-align:right}
+.ttt{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:300px;margin:16px auto}
+.ttt button{aspect-ratio:1;font-size:2.4rem;font-weight:700;padding:0;border-radius:14px}
+.lingo{display:grid;gap:6px;max-width:320px;margin:16px auto}
+.lrow{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.lcell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;text-transform:uppercase;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+.lcell.ok{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
+.lcell.near{background:#e6c46a;color:#2b2414;border-color:#e6c46a;border-radius:50%}
 </style>
 </head>
 <body>
@@ -146,6 +153,11 @@ table.days .n{text-align:right}
   <h1>Afleiding</h1>
   <button class="primary big" id="idea-go">Geef me een idee</button>
   <div class="card idea" id="idea-card" hidden></div>
+  <h2>Spelletjes</h2>
+  <div class="grid">
+    <button class="tile" data-go="drie"><b>Drie op een rij</b><span>Tegen de computer</span></button>
+    <button class="tile" data-go="woord"><b>Woord raden</b><span>Zoals Lingo</span></button>
+  </div>
   <h2>Mijn lijstje</h2>
   <p class="muted">Zet hier dingen op die jij fijn vindt.</p>
   <ul class="list" id="idea-list"></ul>
@@ -237,6 +249,24 @@ table.days .n{text-align:right}
     <div class="card verse" id="a-verse"></div>
     <button data-go="home" style="width:100%">Terug naar het begin</button>
   </div>
+</section>
+
+<section class="view" id="v-drie">
+  <button class="back" data-go="afleiding">← Terug</button>
+  <h1>Drie op een rij</h1>
+  <p class="muted center" id="ttt-msg"></p>
+  <div class="ttt" id="ttt"></div>
+  <button class="primary big" id="ttt-again" hidden>Nog een keer</button>
+</section>
+
+<section class="view" id="v-woord">
+  <button class="back" data-go="afleiding">← Terug</button>
+  <h1>Woord raden</h1>
+  <p class="muted">Vierkantje: goede letter op de goede plek. Rondje: de letter zit erin, maar op een andere plek.</p>
+  <div class="lingo" id="lingo"></div>
+  <p class="center" id="l-msg"></p>
+  <div id="l-play"><div class="row"><input id="l-in" maxlength="5" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Jouw woord"><button class="primary" id="l-go">Raad</button></div></div>
+  <button class="primary big" id="l-again" hidden>Nieuw woord</button>
 </section>
 
 <section class="view" id="v-overzicht">
@@ -349,7 +379,7 @@ function delBtn(question, fn){
 }
 
 /* Navigatie */
-const VIEWS = ["home","rust","bakje","afleiding","bemoediging","plan","overzicht","vragen","ontspan","avond"];
+const VIEWS = ["home","rust","bakje","afleiding","bemoediging","plan","overzicht","vragen","ontspan","avond","drie","woord"];
 function show(){
   let v = location.hash.slice(1);
   if (!VIEWS.includes(v)) v = "home";
@@ -750,13 +780,103 @@ $("#a-done").onclick = () => {
   $("#a-end").hidden = false;
 };
 
+/* Drie op een rij */
+const LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+let ttt = [], tttDone = false;
+function tttWinner(b){
+  for (const [a, c, d] of LINES){ if (b[a] && b[a] === b[c] && b[a] === b[d]) return b[a]; }
+  return b.every(Boolean) ? "gelijk" : null;
+}
+function renderDrie(){ ttt = Array(9).fill(""); tttDone = false; logEvent("spel"); drawTtt("Jij bent X. Tik op een vakje."); }
+function drawTtt(msg){
+  const g = $("#ttt");
+  g.replaceChildren();
+  ttt.forEach((v, i) => g.append(el("button", {"aria-label":"Vakje " + (i + 1), onclick:() => tttMove(i)}, v)));
+  $("#ttt-msg").textContent = msg;
+  $("#ttt-again").hidden = !tttDone;
+}
+function tttFind(mark){
+  for (const l of LINES){
+    const vals = l.map(i => ttt[i]);
+    if (vals.filter(v => v === mark).length === 2 && vals.includes("")) return l[vals.indexOf("")];
+  }
+  return -1;
+}
+function tttMove(i){
+  if (tttDone || ttt[i]) return;
+  ttt[i] = "X";
+  let w = tttWinner(ttt);
+  if (w) return tttEnd(w);
+  let m = tttFind("O");
+  if (m < 0 && Math.random() < 0.6) m = tttFind("X");
+  if (m < 0 && !ttt[4] && Math.random() < 0.5) m = 4;
+  if (m < 0){ const free = ttt.map((v, k) => v ? -1 : k).filter(k => k >= 0); m = free[Math.floor(Math.random() * free.length)]; }
+  ttt[m] = "O";
+  w = tttWinner(ttt);
+  if (w) return tttEnd(w);
+  drawTtt("Jouw beurt.");
+}
+function tttEnd(w){
+  tttDone = true;
+  drawTtt(w === "X" ? "Jij wint! Goed gedaan." : w === "O" ? "De computer wint deze keer." : "Gelijkspel.");
+}
+$("#ttt-again").onclick = () => renderDrie();
+
+/* Woord raden */
+const WORDS = ["appel","bloem","vogel","zomer","water","licht","tafel","stoel","groen","paard","zebra","fiets","boter","druif","taart","kaars","molen","haven","schip","bomen","beker","lepel","kopje","pizza","mango","bever","zwaan","merel","lente","regen","hemel","aarde","heide","rozen","lelie","kamer","deken","piano","lezen","brief","kaart","feest","vrede","samen","thuis","uilen"];
+let lw = "", lg = [], lDone = false;
+function scoreGuess(g){
+  const res = Array(5).fill(""), left = {};
+  for (let i = 0; i < 5; i++){ if (g[i] === lw[i]) res[i] = "ok"; else left[lw[i]] = (left[lw[i]] || 0) + 1; }
+  for (let i = 0; i < 5; i++){ if (!res[i] && left[g[i]]){ res[i] = "near"; left[g[i]]--; } }
+  return res;
+}
+function renderLingo(){
+  lw = WORDS[Math.floor(Math.random() * WORDS.length)];
+  lg = []; lDone = false;
+  logEvent("spel");
+  drawLingo("Het woord begint met een " + lw[0].toUpperCase() + ". Je hebt 5 beurten.");
+}
+function drawLingo(msg){
+  const box = $("#lingo");
+  box.replaceChildren();
+  const known = Array(5).fill(false);
+  known[0] = true;
+  lg.forEach(g => scoreGuess(g).forEach((s, c) => { if (s === "ok") known[c] = true; }));
+  for (let r = 0; r < 5; r++){
+    const row = el("div", {class:"lrow"});
+    const g = lg[r], sc = g ? scoreGuess(g) : null;
+    for (let c = 0; c < 5; c++){
+      let ch = "", cls = "lcell";
+      if (g){ ch = g[c]; if (sc[c]) cls += " " + sc[c]; }
+      else if (r === lg.length && !lDone && known[c]) ch = lw[c];
+      row.append(el("div", {class:cls}, ch));
+    }
+    box.append(row);
+  }
+  $("#l-msg").textContent = msg;
+  $("#l-play").hidden = lDone;
+  $("#l-again").hidden = !lDone;
+  $("#l-in").value = lDone ? "" : lw[0];
+}
+$("#l-go").onclick = () => {
+  const g = $("#l-in").value.trim().toLowerCase();
+  if (!/^[a-zäëïöü]{5}$/.test(g)){ $("#l-msg").textContent = "Typ een woord van 5 letters."; return; }
+  lg.push(g);
+  if (g === lw){ lDone = true; drawLingo("Goed geraden! Het woord was " + lw.toUpperCase() + "."); return; }
+  if (lg.length >= 5){ lDone = true; drawLingo("Het woord was " + lw.toUpperCase() + ". Zin in een nieuw woord?"); return; }
+  drawLingo("Probeer nog een woord.");
+};
+$("#l-in").addEventListener("keydown", e => { if (e.key === "Enter") $("#l-go").click(); });
+$("#l-again").onclick = () => renderLingo();
+
 /* Overzicht */
 function renderOverzicht(){
   const now = new Date();
   const day = n => new Date(now.getFullYear(), now.getMonth(), now.getDate() + n).getTime();
   const start = day(-6), prevStart = day(-13), end = day(1);
   const cnt = (e, a, b) => (S.log || []).filter(x => x.e === e && x.t >= a && x.t < b).length;
-  const ITEMS = [["zorg","Zorgen in het bakje"],["rust","Rustroute gebruikt"],["afleiding","Afleidingsideeën"],["bemoediging","Bemoediging bekeken"],["piek","Piekertijd gehouden"],["vraag","Vragen geparkeerd"],["ontspan","Spierontspanning"],["avond","Dag afgesloten"]];
+  const ITEMS = [["zorg","Zorgen in het bakje"],["rust","Rustroute gebruikt"],["afleiding","Afleidingsideeën"],["bemoediging","Bemoediging bekeken"],["piek","Piekertijd gehouden"],["vraag","Vragen geparkeerd"],["ontspan","Spierontspanning"],["avond","Dag afgesloten"],["spel","Spelletjes gespeeld"]];
   const ul = $("#ov-sum");
   ul.replaceChildren();
   ITEMS.forEach(([e, l]) => ul.append(el("li", {},
@@ -771,7 +891,7 @@ function renderOverzicht(){
   }
 }
 
-const RENDER = {home:renderHome, bakje:renderBakje, afleiding:renderAfleiding, bemoediging:renderBemoediging, plan:renderPlan, overzicht:renderOverzicht, vragen:renderVragen, ontspan:renderOntspan, avond:renderAvond};
+const RENDER = {home:renderHome, bakje:renderBakje, afleiding:renderAfleiding, bemoediging:renderBemoediging, plan:renderPlan, overzicht:renderOverzicht, vragen:renderVragen, ontspan:renderOntspan, avond:renderAvond, drie:renderDrie, woord:renderLingo};
 show();
 </script>
 </body>
