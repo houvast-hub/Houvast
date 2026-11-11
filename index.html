@@ -133,7 +133,7 @@ table.days .n{text-align:right}
   <div id="piek" hidden>
     <div class="card">
       <div class="timer" id="piek-timer">30:00</div>
-      <p class="muted center">Kies een zorg en bespreek hem met de vier vragen. Wat niet lukt, mag tot morgen in het bakje blijven.</p>
+      <p class="muted center">Kies een zorg en tik op Bespreken. Wat niet lukt, mag tot morgen in het bakje blijven.</p>
       <ul class="list" id="piek-list"></ul>
       <div id="talk" hidden></div>
       <button id="piek-stop" style="width:100%">Piekertijd afsluiten</button>
@@ -146,6 +146,7 @@ table.days .n{text-align:right}
   </div>
   <label for="piek-time">Vaste piekertijd (elke dag, 30 minuten)</label>
   <input type="time" id="piek-time">
+  <label style="display:flex;gap:10px;align-items:center;font-weight:400"><input type="checkbox" id="piek-sound" style="width:auto"> Zacht geluidje als de tijd om is</label>
 </section>
 
 <section class="view" id="v-afleiding">
@@ -283,6 +284,7 @@ table.days .n{text-align:right}
 const DEF = {
   worries: [],
   piek: "19:00",
+  piekSound: true,
   ideas: [
     "Zet je favoriete muziek op",
     "Maak een korte wandeling, al is het maar een rondje om het blok",
@@ -491,6 +493,7 @@ function renderBakje(){
     (n === 0 ? "Het bakje is leeg." : n === 1 ? "Er ligt 1 zorg in het bakje." : "Er liggen " + n + " zorgen in het bakje.") +
     " Piekertijd: elke dag om " + S.piek + ", 30 minuten.";
   $("#piek-time").value = S.piek;
+  $("#piek-sound").checked = S.piekSound !== false;
   renderSteps();
   renderPiekList();
 }
@@ -505,19 +508,21 @@ $("#worry-add").onclick = () => {
   m.hidden = false;
   renderBakje();
 };
+$("#piek-sound").onchange = e => { S.piekSound = e.target.checked; save(); };
 $("#piek-time").onchange = e => { if (e.target.value){ S.piek = e.target.value; save(); renderBakje(); } };
 let piekEnd = null, piekInt = null;
 function tick(){
   const ms = Math.max(0, piekEnd - Date.now());
   const m = Math.floor(ms / 60000), s = Math.floor(ms % 60000 / 1000);
   $("#piek-timer").textContent = ms > 0 ? m + ":" + String(s).padStart(2, "0") : "De tijd is om";
-  if (ms <= 0) clearInterval(piekInt);
+  if (ms <= 0){ clearInterval(piekInt); chime(); }
 }
 $("#piek-start").onclick = () => {
   closeTalk();
   $("#piek").hidden = false;
   piekEnd = Date.now() + 30 * 60000;
   logEvent("piek");
+  unlockAudio();
   clearInterval(piekInt); tick(); piekInt = setInterval(tick, 1000);
   renderPiekList();
   $("#piek").scrollIntoView({behavior:"smooth"});
@@ -544,29 +549,49 @@ function openTalk(w){
   box.hidden = false;
   const zorg = el("div", {class:"note"}, w.text);
   const go = (title, ...rest) => { box.replaceChildren(zorg, el("h2", {}, title), ...rest); box.scrollIntoView({behavior:"smooth", block:"start"}); };
-  const step1 = () => go("1. Wat is de zorg precies?",
+  const step1 = () => go("Wat is de zorg precies?",
     el("p", {}, "Maak het zo concreet mogelijk. Waar ben je precies bang voor? Probeer het in één zin te zeggen."),
     el("div", {class:"stack"},
       el("button", {class:"primary", onclick:() => step2()}, "Volgende"),
       el("button", {onclick:closeTalk}, "Terug naar het bakje")));
-  const step2 = () => {
-    const goods = S.good.slice(-3).reverse();
-    const ul = el("ul", {class:"list"});
-    goods.forEach(g => ul.append(el("li", {}, el("span", {}, g.text))));
-    go("2. Hoe vaak ging dit al goed?",
-      el("p", {}, "Denk aan keren dat je je eerder zorgen maakte en het toch goed afliep."),
-      goods.length
-        ? el("div", {}, el("p", {class:"muted"}, "Uit je lijst met dingen die goed gingen:"), ul)
-        : el("p", {class:"muted"}, "Je lijst met dingen die goed gingen is nog leeg. Als iets goed afloopt, kun je het daar bewaren."),
-      el("div", {class:"stack"},
-        el("button", {class:"primary", onclick:() => step3()}, "Volgende"),
-        el("button", {onclick:() => step1()}, "Vorige")));
-  };
-  const step3 = () => go("3. Kunnen we er iets aan doen?",
+  const step2 = () => go("Wat voor zorg is het?",
+    el("p", {}, "Kies wat het beste past."),
     el("div", {class:"stack"},
-      el("button", {class:"primary", onclick:() => step3yes()}, "Ja, er is iets wat we kunnen doen"),
-      el("button", {class:"primary", onclick:() => step3no()}, "Nee, dit kunnen we niet oplossen"),
+      el("button", {class:"primary", onclick:() => stepMed()}, "Een vraag over medicijnen of gezondheid"),
+      el("button", {class:"primary", onclick:() => step3yes()}, "Iets waar we nu iets aan kunnen doen"),
+      el("button", {class:"primary", onclick:() => stepFuture()}, "Iets wat misschien later gebeurt"),
+      el("button", {onclick:() => step1()}, "Vorige")));
+  const stepMed = () => {
+    const sel = el("select", {"aria-label":"Voor wie is de vraag"});
+    ["Arts","Psycholoog","Behandelaar","Apotheek"].forEach(o => sel.append(el("option", {}, o)));
+    go("Een vraag voor de dokter",
+      el("p", {}, "Dit beantwoorden we niet zelf, en ook niet met internet. Je arts of behandelaar kent jou en je medicijnen."),
+      el("p", {class:"note"}, "Stop nooit zelf met medicijnen zonder overleg. Twijfel je erover? Dan is dat precies iets om met je arts te bespreken."),
+      el("p", {class:"muted"}, "Voor wie is de vraag?"),
+      sel,
+      el("div", {class:"stack", style:"margin-top:12px"},
+        el("button", {class:"primary", onclick:() => {
+          S.questions.push({id: Date.now(), text: w.text, who: sel.value, answer: ""});
+          S.worries = S.worries.filter(x => x.id !== w.id);
+          logEvent("vraag");
+          go("Staat bij je vragen",
+            el("p", {}, "Je vindt hem bij Ik wil iets opzoeken. Neem hem mee naar je volgende afspraak."),
+            el("p", {class:"note"}, "Heb je nu last van iets nieuws, of van iets wat je niet vertrouwt? Bel dan vandaag nog je apotheek of behandelaar."),
+            el("div", {class:"stack"}, el("button", {class:"primary", onclick:() => { closeTalk(); renderBakje(); }}, "Terug naar het bakje")));
+        }}, "Zet bij vragen voor de dokter"),
+        el("button", {onclick:() => step2()}, "Vorige")));
+  };
+  const stepFuture = () => go("Iets wat misschien later gebeurt",
+    el("p", {}, "Bespreek deze drie vragen samen:"),
+    el("ul", {class:"list"},
+      el("li", {}, el("span", {}, "Wat weet je vandaag zeker? Niet wat er misschien gebeurt, maar wat nu waar is.")),
+      el("li", {}, el("span", {}, "Is er één klein ding dat je nu kunt doen?")),
+      el("li", {}, el("span", {}, "Wie helpt je als het toch gebeurt?"))),
+    el("div", {class:"stack"},
+      el("button", {class:"primary", onclick:() => step3yes()}, "Er is een klein stapje"),
+      el("button", {class:"primary", onclick:() => step3no()}, "Niets te doen, we leggen het neer"),
       el("button", {onclick:() => step2()}, "Vorige")));
+  const step3 = () => step2();
   const step3yes = () => {
     const inp = el("input", {placeholder:"Wat doen we, wie doet het en wanneer?"});
     go("Eén kleine stap",
@@ -587,7 +612,7 @@ function openTalk(w){
         el("button", {class:"primary", onclick:() => step4()}, "Volgende"),
         el("button", {onclick:() => step3()}, "Vorige")));
   };
-  const step4 = () => go("4. Afsluiten",
+  const step4 = () => go("Afsluiten",
     el("p", {}, "Hoe gaan we verder met deze zorg?"),
     el("div", {class:"stack"},
       el("button", {class:"primary", onclick:() => { S.worries = S.worries.filter(x => x.id !== w.id); save(); closeTalk(); renderBakje(); }}, "Besproken, ik leg hem neer"),
@@ -600,6 +625,32 @@ function renderSteps(){
   $("#steps-box").hidden = !S.steps.length;
   S.steps.forEach((s, i) => ul.append(el("li", {}, el("span", {}, s.text),
     el("button", {onclick:() => { S.steps.splice(i, 1); save(); renderSteps(); }}, "Gedaan"))));
+}
+
+/* Geluidje bij einde piekertijd */
+let audioCtx = null;
+function unlockAudio(){
+  if (S.piekSound === false) return;
+  try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); audioCtx.resume(); } catch (e) {}
+}
+function chime(){
+  if (S.piekSound === false) return;
+  try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch (e) {}
+  if (!audioCtx) return;
+  try {
+    const now = audioCtx.currentTime;
+    [[660, 0], [880, 0.35]].forEach(([f, d]) => {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = "sine";
+      o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, now + d);
+      g.gain.exponentialRampToValueAtTime(0.15, now + d + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + d + 1.6);
+      o.connect(g).connect(audioCtx.destination);
+      o.start(now + d);
+      o.stop(now + d + 1.7);
+    });
+  } catch (e) {}
 }
 
 /* Afleiding */
