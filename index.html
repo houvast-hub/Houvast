@@ -565,13 +565,13 @@ function openTalk(w){
     const sel = el("select", {"aria-label":"Voor wie is de vraag"});
     ["Arts","Psycholoog","Behandelaar","Apotheek"].forEach(o => sel.append(el("option", {}, o)));
     go("Een vraag voor de dokter",
-      el("p", {}, "Dit beantwoorden we niet zelf, en ook niet met internet. Je arts of behandelaar kent jou en je medicijnen."),
+      el("p", {}, "Je arts of behandelaar kent jou en je medicijnen, en kan dit het beste beantwoorden. Jullie kunnen het eerst kort samen bespreken, of de vraag meteen bij je vragen zetten."),
       el("p", {class:"note"}, "Stop nooit zelf met medicijnen zonder overleg. Twijfel je erover? Dan is dat precies iets om met je arts te bespreken."),
       el("p", {class:"muted"}, "Voor wie is de vraag?"),
       sel,
       el("div", {class:"stack", style:"margin-top:12px"},
         el("button", {class:"primary", onclick:() => {
-          S.questions.push({id: Date.now(), text: w.text, who: sel.value, answer: ""});
+          S.questions.push({id: Date.now(), text: w.text + (medNote ? ". Wat ik merk: " + medNote : ""), who: sel.value, answer: ""});
           S.worries = S.worries.filter(x => x.id !== w.id);
           logEvent("vraag");
           go("Staat bij je vragen",
@@ -579,7 +579,27 @@ function openTalk(w){
             el("p", {class:"note"}, "Heb je nu last van iets nieuws, of van iets wat je niet vertrouwt? Bel dan vandaag nog je apotheek of behandelaar."),
             el("div", {class:"stack"}, el("button", {class:"primary", onclick:() => { closeTalk(); renderBakje(); }}, "Terug naar het bakje")));
         }}, "Zet bij vragen voor de dokter"),
+        medNote ? "" : el("button", {class:"primary", onclick:() => stepMedTalk()}, "Eerst kort samen bespreken"),
         el("button", {onclick:() => step2()}, "Vorige")));
+  };
+  let medNote = "";
+  const stepMedTalk = () => {
+    const ta = el("textarea", {placeholder:"Wat merk je precies? Sinds wanneer?", style:"min-height:70px"});
+    ta.value = medNote;
+    go("Kort samen bespreken",
+      el("p", {class:"note"}, "Let op: jullie zijn geen arts. Een arts, psycholoog of apotheker kan dit veel beter beoordelen. Praat over wat je zelf merkt, niet over wat er op internet staat."),
+      el("p", {class:"muted"}, "Een paar minuten is genoeg. Deze vragen helpen:"),
+      el("ul", {class:"list"},
+        el("li", {}, el("span", {}, "Wat merk je precies, en sinds wanneer?")),
+        el("li", {}, el("span", {}, "Hoeveel last heb je ervan: een beetje, het stoort, of heel veel?")),
+        el("li", {}, el("span", {}, "Wat wil je straks aan de arts vragen?"))),
+      el("p", {class:"muted"}, "Schrijf kort op wat je merkt. Dat helpt bij de afspraak."),
+      ta,
+      el("p", {class:"note"}, "Is het nieuw, wordt het erger of vertrouw je het niet? Bel dan vandaag nog je apotheek of behandelaar."),
+      el("div", {class:"stack"},
+        el("button", {class:"primary", onclick:() => { medNote = ta.value.trim(); stepMed(); }}, "Ook bij vragen voor de dokter zetten"),
+        el("button", {onclick:() => step4()}, "Besproken, dit is genoeg"),
+        el("button", {onclick:() => { medNote = ta.value.trim(); stepMed(); }}, "Vorige")));
   };
   const stepFuture = () => go("Iets wat misschien later gebeurt",
     el("p", {}, "Bespreek deze drie vragen samen:"),
